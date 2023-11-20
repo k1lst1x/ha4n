@@ -19,65 +19,73 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
+
 def extract_links_from_section(section, base_url):
   soup = BeautifulSoup(str(section), 'html.parser')
   links = [urljoin(base_url, a['href']) for a in soup.find_all('a', href=True)]
   return links
 
+
 def extract_section(url, section_class):
   response = requests.get(url)
 
   if response.status_code == 200:
-      soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-      section_content = soup.find('section', class_=section_class)
+    section_content = soup.find('section', class_=section_class)
 
-      if section_content:
-          links = extract_links_from_section(section_content, url)
-          return '\n\n'.join(links[:17])
-      else:
-          return f"Секция с классом '{section_class}' не найдена на странице."
+    if section_content:
+      links = extract_links_from_section(section_content, url)
+      return '\n\n'.join(links[:17])
+    else:
+      return f"Секция с классом '{section_class}' не найдена на странице."
   else:
-      return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
+    return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
+
 
 def extract_links_from_ul(ul, base_url):
   soup = BeautifulSoup(str(ul), 'html.parser')
   links = [urljoin(base_url, a['href']) for a in soup.find_all('a', href=True)]
   return links
 
+
 def extract_ul(url, ul_class):
   response = requests.get(url)
 
   if response.status_code == 200:
-      soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-      ul_content = soup.find('ul', class_=ul_class)
+    ul_content = soup.find('ul', class_=ul_class)
 
-      if ul_content:
-          links = extract_links_from_ul(ul_content, url)
-          return '\n\n'.join(links[:15])
-      else:
-          return f"UL с классом '{ul_class}' не найден на странице."
+    if ul_content:
+      links = extract_links_from_ul(ul_content, url)
+      return '\n\n'.join(links[:15])
+    else:
+      return f"UL с классом '{ul_class}' не найден на странице."
   else:
-      return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
+    return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
+
 
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: Message):
   if message.chat.type == 'private':
     await message.answer(
-        "Добро пожаловать! Этот бот умеет производить поиск по никнеймy или фотографии. 🕵️‍♂️", reply_markup=nav.BotMenu)
+        "Добро пожаловать! Этот бот умеет производить поиск по никнеймy или фотографии. 🕵️‍♂️",
+        reply_markup=nav.BotMenu)
+
 
 @dp.message_handler(content_types=types.ContentTypes.TEXT)
 async def process_username(message: types.Message):
   if message.chat.type == 'private':
-      username = message.text
+    username = message.text
 
-      url = f"https://yandex.ru/search/?text=%22{username}%22"
-      ul_class = 'serp-list'
+    url = f"https://yandex.ru/search/?text=%22{username}%22"
+    ul_class = 'serp-list'
 
-      result = extract_ul(url, ul_class)
+    result = extract_ul(url, ul_class)
 
-      await message.reply(result)
+    await message.reply(result)
+
 
 @dp.message_handler(content_types=ContentTypes.PHOTO)
 async def what_photo(message: Message):
@@ -88,17 +96,24 @@ async def what_photo(message: Message):
   photo_url = f"https://api.telegram.org/file/bot{API_TOKEN}/{file_info.file_path}"
 
   yandex_search_url = 'https://yandex.ru/images/search'
-  yandex_payload = {'source': 'collections', 'rpt': 'imageview', 'url': photo_url}
+  yandex_payload = {
+      'source': 'collections',
+      'rpt': 'imageview',
+      'url': photo_url
+  }
 
   url = f"{yandex_search_url}?{urlencode(yandex_payload)}"
   section_class = 'CbirSites'
   result = extract_section(url, section_class)
   await message.answer(f"Результат поиска по картинке:\n\n{result}")
 
+
 @dp.callback_query_handler(text="srch")
 async def srch(callback: types.CallbackQuery):
   await bot.delete_message(callback.from_user.id, callback.message.message_id)
-  await bot.send_message(callback.from_user.id, "Введите никнейм или отправьте фотографию:")
+  await bot.send_message(callback.from_user.id,
+                         "Введите никнейм или отправьте фотографию:")
+
 
 keep_alive()
 
