@@ -22,48 +22,45 @@ dp = Dispatcher(bot)
 
 def extract_links_from_section(section, base_url):
   soup = BeautifulSoup(str(section), 'html.parser')
-  links = [urljoin(base_url, a['href']) for a in soup.find_all('a', href=True)]
-  return links
-
+  links = {urljoin(base_url, a['href']) for a in soup.find_all('a', href=True)}
+  return list(links)
 
 def extract_section(url, section_class):
   response = requests.get(url)
 
   if response.status_code == 200:
-    soup = BeautifulSoup(response.text, 'html.parser')
+      soup = BeautifulSoup(response.text, 'html.parser')
 
-    section_content = soup.find('section', class_=section_class)
+      section_content = soup.find('section', class_=section_class)
 
-    if section_content:
-      links = extract_links_from_section(section_content, url)
-      return '\n\n'.join(links[:17])
-    else:
-      return f"Секция с классом '{section_class}' не найдена на странице."
+      if section_content:
+          links = extract_links_from_section(section_content, url)
+          return '\n\n'.join(links[:17])
+      else:
+          return f"Секция с классом '{section_class}' не найдена на странице."
   else:
-    return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
-
+      return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
 
 def extract_links_from_ul(ul, base_url):
   soup = BeautifulSoup(str(ul), 'html.parser')
-  links = [urljoin(base_url, a['href']) for a in soup.find_all('a', href=True)]
-  return links
-
+  links = {urljoin(base_url, a['href']) for a in soup.find_all('a', href=True)}
+  return list(links)
 
 def extract_ul(url, ul_class):
   response = requests.get(url)
 
   if response.status_code == 200:
-    soup = BeautifulSoup(response.text, 'html.parser')
+      soup = BeautifulSoup(response.text, 'html.parser')
 
-    ul_content = soup.find('ul', class_=ul_class)
+      ul_content = soup.find('ul', class_=ul_class)
 
-    if ul_content:
-      links = extract_links_from_ul(ul_content, url)
-      return '\n\n'.join(links[:15])
-    else:
-      return f"UL с классом '{ul_class}' не найден на странице."
+      if ul_content:
+          links = extract_links_from_ul(ul_content, url)
+          return '\n\n'.join(links[:15])
+      else:
+          return f"UL с классом '{ul_class}' не найден на странице."
   else:
-    return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
+      return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
 
 
 @dp.message_handler(commands=['start'])
@@ -83,8 +80,10 @@ async def process_username(message: types.Message):
     ul_class = 'serp-list'
 
     result = extract_ul(url, ul_class)
-
-    await message.reply(result)
+    if result == '':
+      await message.reply("По вашему запросу ничего не найдено.")
+    else:
+      await message.reply(result)
 
 
 @dp.message_handler(content_types=ContentTypes.PHOTO)
