@@ -25,6 +25,7 @@ def extract_links_from_section(section, base_url):
   links = {urljoin(base_url, a['href']) for a in soup.find_all('a', href=True)}
   return list(links)
 
+# Function for image
 def extract_section(url, section_class):
   response = requests.get(url)
 
@@ -41,24 +42,20 @@ def extract_section(url, section_class):
   else:
       return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
 
-def extract_links_from_ul(ul, base_url):
-  soup = BeautifulSoup(str(ul), 'html.parser')
-  links = {urljoin(base_url, a['href']) for a in soup.find_all('a', href=True)}
-  return list(links)
-
-def extract_ul(url, ul_class):
+# Function for text
+def extract_results(url, results_class):
   response = requests.get(url)
 
   if response.status_code == 200:
       soup = BeautifulSoup(response.text, 'html.parser')
 
-      ul_content = soup.find('ul', class_=ul_class)
+      results_content = soup.find('div', class_=results_class)
 
-      if ul_content:
-          links = extract_links_from_ul(ul_content, url)
-          return '\n\n'.join(links[:15])
+      if results_content:
+          links = extract_links_from_section(results_content, url)
+          return '\n\n'.join(links[:17])
       else:
-          return f"UL с классом '{ul_class}' не найден на странице."
+          return f"Элемент с классом '{results_class}' не найден на странице."
   else:
       return f"Ошибка при запросе страницы. Код состояния: {response.status_code}"
 
@@ -73,17 +70,17 @@ async def send_welcome(message: Message):
 
 @dp.message_handler(content_types=types.ContentTypes.TEXT)
 async def process_username(message: types.Message):
-  if message.chat.type == 'private':
-    username = message.text
+    if message.chat.type == 'private':
+        username = message.text
 
-    url = f"https://yandex.ru/search/?text=%22{username}%22"
-    ul_class = 'serp-list'
+        url = f"https://search.brave.com/search?q=%22{username}%22"
+        results_class = 'results'
 
-    result = extract_ul(url, ul_class)
-    if result == '':
-      await message.reply("По вашему запросу ничего не найдено.")
-    else:
-      await message.reply(result)
+        result = extract_results(url, results_class)
+        if result == '':
+            await message.reply("По вашему запросу ничего не найдено.")
+        else:
+            await message.reply(result)
 
 
 @dp.message_handler(content_types=ContentTypes.PHOTO)
